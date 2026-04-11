@@ -47,7 +47,7 @@ export function renderResult(result, userLevels, dimOrder, dimDefs, config, type
   renderDimensionDetails(userLevels, dimOrder, dimDefs)
 
   // 渲染搭子匹配器结果（包含最佳搭子 + 全类型匹配榜平铺展示）
-  renderMatcherResult(primary, typesData)
+  renderMatcherResult(primary, secondary, typesData)
 
   // 免责声明
   document.getElementById('disclaimer').textContent =
@@ -115,9 +115,16 @@ function renderDimensionDetails(userLevels, dimOrder, dimDefs) {
 /**
  * 渲染搭子匹配器结果
  */
-function renderMatcherResult(primary, typesData) {
+function renderMatcherResult(primary, secondary, typesData) {
   // 获取当前类型的完整信息
-  const myType = typesData.standard.find(t => t.code === primary.code)
+  let myType = typesData.standard.find(t => t.code === primary.code)
+
+  // 特殊类型（DRUNK、HHHH）在 types.standard 中找不到
+  // 此时使用次要匹配的类型来计算搭子
+  if (!myType && secondary) {
+    myType = typesData.standard.find(t => t.code === secondary.code)
+  }
+
   if (!myType) return
 
   // 计算最佳搭子
@@ -125,9 +132,10 @@ function renderMatcherResult(primary, typesData) {
   if (!bestMatch) return
 
   // 保存匹配数据供分享使用
+  // 对于特殊类型（DRUNK/HHHH），显示次要匹配类型的搭子信息
   window._matcherData = {
     bestMatch,
-    myCode: primary.code,
+    myCode: myType.code,
     myPattern: myType.pattern
   }
 
