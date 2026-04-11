@@ -3,7 +3,6 @@
  */
 
 const LEVEL_NUM = { L: 1, M: 2, H: 3 }
-const LEVEL_LABEL = { L: '低', M: '中', H: '高' }
 
 /**
  * 生成分享卡片并下载
@@ -11,9 +10,19 @@ const LEVEL_LABEL = { L: '低', M: '中', H: '高' }
 export async function generateShareImage(primary, userLevels, dimOrder, dimDefs, mode, matcherData) {
   const dpr = 2
   const W = 720
-  // 如果有匹配数据，增加高度以容纳匹配信息
-  const baseH = matcherData ? 1500 : 1280
-  const H = baseH
+  const hasBestMatch = matcherData?.bestMatch
+
+  // 计算各部分高度
+  const headerHeight = 180        // 标题 + 类型代码 + 名称 + 徽章
+  const radarHeight = 240         // 雷达图区域
+  const matchCardHeight = hasBestMatch ? 260 : 0  // 最佳搭子卡片
+  const padding = 48              // 上下内边距
+  const sectionGap = 24           // 区块间距
+
+  // 总高度 = 内边距 + 头部 + 间距 + 雷达图 + 间距 + 最佳搭子 + 间距 + 水印
+  const contentHeight = padding + headerHeight + sectionGap + radarHeight + (hasBestMatch ? sectionGap + matchCardHeight : 0) + sectionGap + 30
+  const H = contentHeight
+
   const canvas = document.createElement('canvas')
   canvas.width = W * dpr
   canvas.height = H * dpr
@@ -25,176 +34,118 @@ export async function generateShareImage(primary, userLevels, dimOrder, dimDefs,
   ctx.fillRect(0, 0, W, H)
 
   // 卡片白底
-  const cardX = 32, cardY = 32, cardW = W - 64, cardH = H - 64
-  roundRect(ctx, cardX, cardY, cardW, cardH, 20)
+  const cardX = 32, cardY = 32, cardW = W - 64
   ctx.fillStyle = '#ffffff'
+  roundRect(ctx, cardX, cardY, cardW, H - 64, 20)
   ctx.fill()
-  ctx.shadowColor = 'transparent'
 
-  let y = cardY + 48
+  let y = cardY + 24
 
-  // Kicker
+  // 标题
   ctx.textAlign = 'center'
-  ctx.font = '400 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.font = '400 16px system-ui, "PingFang SC", sans-serif'
   ctx.fillStyle = '#6b7b6e'
-  const kickerText = mode === 'drunk' ? '隐藏人格已激活' : mode === 'fallback' ? '系统强制兜底' : '你的主类型'
+  const kickerText = mode === 'drunk' ? '隐藏人格已激活' : mode === 'fallback' ? '系统强制兜底' : '我的 SBTI 类型'
   ctx.fillText(kickerText, W / 2, y)
-  y += 56
-
-  // 类型代码
-  ctx.font = '900 72px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-  ctx.fillStyle = '#4c6752'
-  ctx.fillText(primary.code, W / 2, y)
-  y += 40
-
-  // 中文名
-  ctx.font = '600 32px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-  ctx.fillStyle = '#2c3e2d'
-  ctx.fillText(primary.cn, W / 2, y)
   y += 36
 
+  // 类型代码
+  ctx.font = '900 60px system-ui, "PingFang SC", sans-serif'
+  ctx.fillStyle = '#4c6752'
+  ctx.fillText(primary.code, W / 2, y)
+  y += 32
+
+  // 中文名
+  ctx.font = '600 22px system-ui, "PingFang SC", sans-serif'
+  ctx.fillStyle = '#2c3e2d'
+  ctx.fillText(primary.cn, W / 2, y)
+  y += 28
+
   // 匹配度徽章
-  const badgeText = `匹配度 ${primary.similarity}%` + (primary.exact != null ? ` · 精准命中 ${primary.exact}/15 维` : '')
-  ctx.font = '500 20px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-  const badgeW = ctx.measureText(badgeText).width + 40
-  roundRect(ctx, (W - badgeW) / 2, y - 16, badgeW, 36, 18)
+  const badgeText = `匹配度 ${primary.similarity}%` + (primary.exact != null ? ` · ${primary.exact}/15维` : '')
+  ctx.font = '500 15px system-ui, "PingFang SC", sans-serif'
+  const badgeW = ctx.measureText(badgeText).width + 24
   ctx.fillStyle = '#e8f0ea'
+  roundRect(ctx, (W - badgeW) / 2, y - 10, badgeW, 26, 13)
   ctx.fill()
   ctx.fillStyle = '#4c6752'
-  ctx.fillText(badgeText, W / 2, y + 6)
-  y += 44
-
-  // Intro
-  ctx.font = 'italic 600 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-  ctx.fillStyle = '#2c3e2d'
-  const introLines = wrapText(ctx, primary.intro || '', cardW - 80)
-  for (const line of introLines) {
-    ctx.fillText(line, W / 2, y)
-    y += 30
-  }
-  y += 16
+  ctx.fillText(badgeText, W / 2, y + 4)
+  y += 36
 
   // 雷达图
   const radarCx = W / 2
-  const radarCy = y + 150
-  const radarR = 130
+  const radarCy = y + 90
+  const radarR = 90
   drawShareRadar(ctx, radarCx, radarCy, radarR, userLevels, dimOrder, dimDefs)
-  y = radarCy + radarR + 40
+  y = radarCy + radarR + 24
 
-  // 维度条形图
-  y += 10
-  ctx.textAlign = 'left'
-  const barX = cardX + 48
-  const barMaxW = cardW - 96
-  const dimNameW = 110
+  // 最佳搭子
+  if (hasBestMatch) {
+    const { bestMatch } = matcherData
+    const matchCardX = cardX + 24
+    const matchCardW = cardW - 48
+    const matchCardY = y
 
-  for (const dim of dimOrder) {
-    const level = userLevels[dim] || 'M'
-    const val = LEVEL_NUM[level]
-    const def = dimDefs[dim]
-    if (!def) continue
-
-    const name = def.name.replace(/^[A-Za-z0-9]+\s*/, '')
-
-    // 维度名
-    ctx.font = '600 16px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-    ctx.fillStyle = '#2c3e2d'
-    ctx.fillText(name, barX, y)
-
-    // 进度条背景
-    const progX = barX + dimNameW
-    const progW = barMaxW - dimNameW - 50
-    const progH = 12
-    roundRect(ctx, progX, y - 10, progW, progH, 6)
-    ctx.fillStyle = '#e8f0ea'
+    // 粉色背景卡片
+    ctx.fillStyle = '#fef5f7'
+    roundRect(ctx, matchCardX, matchCardY, matchCardW, 240, 14)
     ctx.fill()
 
-    // 进度条填充
-    const fillW = (val / 3) * progW
-    roundRect(ctx, progX, y - 10, fillW, progH, 6)
-    ctx.fillStyle = val === 3 ? '#2d7a4a' : val === 2 ? '#4c6752' : '#b8860b'
-    ctx.fill()
-
-    // 等级标签
-    ctx.textAlign = 'right'
-    ctx.font = '600 14px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-    ctx.fillStyle = val === 3 ? '#2d7a4a' : val === 2 ? '#4c6752' : '#b8860b'
-    ctx.fillText(LEVEL_LABEL[level], barX + barMaxW, y)
-    ctx.textAlign = 'left'
-
-    y += 26
-  }
-
-  y += 16
-
-  // 最佳搭子信息
-  if (matcherData && matcherData.bestMatch) {
-    const { bestMatch, myCode } = matcherData
-
-    // 分隔线
-    y += 20
-    ctx.beginPath()
-    ctx.moveTo(cardX + 48, y)
-    ctx.lineTo(cardX + cardW - 48, y)
-    ctx.strokeStyle = '#e8f0ea'
+    // 边框
+    ctx.strokeStyle = '#ffd1dc'
     ctx.lineWidth = 2
     ctx.stroke()
-    y += 30
 
-    // 搭子标题
+    let my = matchCardY + 18
+
+    // 关系标签
     ctx.textAlign = 'center'
-    ctx.font = '600 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-    ctx.fillStyle = '#e85d75'
-    ctx.fillText('💕 我的最佳搭子', W / 2, y)
-    y += 36
-
-    // 关系类型标签
-    roundRect(ctx, (W - 140) / 2, y - 14, 140, 32, 16)
-    ctx.fillStyle = '#ffd1dc'
+    ctx.fillStyle = '#ff6b9d'
+    roundRect(ctx, (W - 90) / 2, my - 8, 90, 24, 12)
     ctx.fill()
-    ctx.font = '600 14px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
-    ctx.fillStyle = '#c44569'
-    ctx.fillText(`${bestMatch.relationEmoji} ${bestMatch.relationLabel}`, W / 2, y + 4)
-    y += 40
+    ctx.font = '600 12px system-ui, "PingFang SC", sans-serif'
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(`${bestMatch.relationEmoji} ${bestMatch.relationLabel}`, W / 2, my + 4)
+    my += 30
 
-    // 搭子类型代码
-    ctx.font = '900 48px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    // 搭子代码
+    ctx.font = '900 36px system-ui, "PingFang SC", sans-serif'
     ctx.fillStyle = '#c44569'
-    ctx.fillText(bestMatch.code, W / 2, y)
-    y += 32
+    ctx.fillText(bestMatch.code, W / 2, my)
+    my += 26
 
-    // 搭子类型名称
-    ctx.font = '600 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    // 搭子名称
+    ctx.font = '500 16px system-ui, "PingFang SC", sans-serif'
     ctx.fillStyle = '#8b4557'
-    ctx.fillText(bestMatch.cn, W / 2, y)
-    y += 28
+    ctx.fillText(bestMatch.cn, W / 2, my)
+    my += 24
 
     // 匹配度
-    ctx.font = '900 36px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.font = '900 28px system-ui, "PingFang SC", sans-serif'
     ctx.fillStyle = '#e85d75'
-    ctx.fillText(`${bestMatch.score}%`, W / 2, y)
-    y += 20
-    ctx.font = '400 14px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillText(`${bestMatch.score}%`, W / 2, my)
+    my += 14
+    ctx.font = '400 11px system-ui, "PingFang SC", sans-serif'
     ctx.fillStyle = '#b76b7a'
-    ctx.fillText('匹配度', W / 2, y)
-    y += 28
+    ctx.fillText('匹配度', W / 2, my)
+    my += 20
 
-    // 关系描述
-    ctx.font = '400 16px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    // 描述
+    ctx.font = '400 13px system-ui, "PingFang SC", sans-serif'
     ctx.fillStyle = '#8b4557'
-    const descLines = wrapText(ctx, bestMatch.relationDesc, cardW - 120)
+    const descLines = wrapText(ctx, bestMatch.relationDesc, matchCardW - 40)
     for (const line of descLines.slice(0, 2)) {
-      ctx.fillText(line, W / 2, y)
-      y += 22
+      ctx.fillText(line, W / 2, my)
+      my += 18
     }
-    y += 10
+
+    y = matchCardY + 260
   }
 
   // 底部水印
-  ctx.textAlign = 'center'
-  ctx.font = '400 18px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.font = '400 14px system-ui, "PingFang SC", sans-serif'
   ctx.fillStyle = '#aab8ac'
-  ctx.fillText('SBTI 人格测试 · 仅供娱乐', W / 2, H - cardY - 24)
+  ctx.fillText('SBTI 搭子匹配器', W / 2, y + 20)
 
   // 下载
   const link = document.createElement('a')
@@ -204,7 +155,7 @@ export async function generateShareImage(primary, userLevels, dimOrder, dimDefs,
 }
 
 /**
- * 在分享图上绘制雷达图
+ * 绘制雷达图
  */
 function drawShareRadar(ctx, cx, cy, maxR, userLevels, dimOrder, dimDefs) {
   const n = dimOrder.length
@@ -218,13 +169,13 @@ function drawShareRadar(ctx, cx, cy, maxR, userLevels, dimOrder, dimDefs) {
     ctx.arc(cx, cy, r, 0, Math.PI * 2)
     ctx.fillStyle = lv === 3 ? 'rgba(76,103,82,0.06)' : lv === 2 ? 'rgba(76,103,82,0.04)' : 'rgba(76,103,82,0.02)'
     ctx.fill()
-    ctx.strokeStyle = 'rgba(76,103,82,0.12)'
-    ctx.lineWidth = 0.5
+    ctx.strokeStyle = 'rgba(76,103,82,0.1)'
+    ctx.lineWidth = 1
     ctx.stroke()
   }
 
   // 轴线 + 标签
-  ctx.font = '400 12px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.font = '400 10px system-ui, "PingFang SC", sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -235,11 +186,11 @@ function drawShareRadar(ctx, cx, cy, maxR, userLevels, dimOrder, dimDefs) {
     ctx.beginPath()
     ctx.moveTo(cx, cy)
     ctx.lineTo(x, y)
-    ctx.strokeStyle = 'rgba(76,103,82,0.1)'
-    ctx.lineWidth = 0.5
+    ctx.strokeStyle = 'rgba(76,103,82,0.08)'
+    ctx.lineWidth = 1
     ctx.stroke()
 
-    const lr = maxR + 24
+    const lr = maxR + 18
     const lx = cx + Math.cos(angle) * lr
     const ly = cy + Math.sin(angle) * lr
     const label = (dimDefs[dimOrder[i]]?.name || dimOrder[i]).replace(/^[A-Za-z0-9]+\s*/, '')
@@ -259,9 +210,9 @@ function drawShareRadar(ctx, cx, cy, maxR, userLevels, dimOrder, dimDefs) {
     else ctx.lineTo(x, y)
   }
   ctx.closePath()
-  ctx.fillStyle = 'rgba(76,103,82,0.2)'
+  ctx.fillStyle = 'rgba(76,103,82,0.18)'
   ctx.fill()
-  ctx.strokeStyle = 'rgba(76,103,82,0.6)'
+  ctx.strokeStyle = '#4c6752'
   ctx.lineWidth = 2
   ctx.stroke()
 
@@ -272,14 +223,14 @@ function drawShareRadar(ctx, cx, cy, maxR, userLevels, dimOrder, dimDefs) {
     const x = cx + Math.cos(angle) * r
     const y = cy + Math.sin(angle) * r
     ctx.beginPath()
-    ctx.arc(x, y, 3, 0, Math.PI * 2)
+    ctx.arc(x, y, 4, 0, Math.PI * 2)
     ctx.fillStyle = '#4c6752'
     ctx.fill()
   }
 }
 
 /**
- * 圆角矩形
+ * 圆角矩形 - 只创建路径，不填充
  */
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath()

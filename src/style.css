@@ -71,6 +71,36 @@ body {
   padding: 48px 24px;
 }
 
+.intro-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.brand-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
+.brand-divider {
+  display: none;
+}
+
+.brand-slogan {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #e85d75;
+  letter-spacing: 0.05em;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #fef5f7 0%, #fff0f3 100%);
+  border: 1.5px solid #ffd1dc;
+  border-radius: 20px;
+}
+
 .intro-title {
   font-size: 2rem;
   font-weight: 800;
