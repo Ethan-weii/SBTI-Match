@@ -32,7 +32,7 @@ async function init() {
     const scores = calcDimensionScores(answers, questions.main)
     const levels = scoresToLevels(scores, config.scoring.levelThresholds)
     const result = determineResult(levels, dimensions.order, types.standard, types.special, { isDrunk })
-    renderResult(result, levels, dimensions.order, dimensions.definitions, config)
+    renderResult(result, levels, dimensions.order, dimensions.definitions, config, types)
     showPage('result')
   }
 

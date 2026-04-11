@@ -4,4 +4,3 @@ dist/
 *.local
 .claude/
 .gstack/
-.vercel

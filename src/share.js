@@ -8,10 +8,12 @@ const LEVEL_LABEL = { L: '低', M: '中', H: '高' }
 /**
  * 生成分享卡片并下载
  */
-export async function generateShareImage(primary, userLevels, dimOrder, dimDefs, mode) {
+export async function generateShareImage(primary, userLevels, dimOrder, dimDefs, mode, matcherData) {
   const dpr = 2
   const W = 720
-  const H = 1280
+  // 如果有匹配数据，增加高度以容纳匹配信息
+  const baseH = matcherData ? 1500 : 1280
+  const H = baseH
   const canvas = document.createElement('canvas')
   canvas.width = W * dpr
   canvas.height = H * dpr
@@ -124,6 +126,69 @@ export async function generateShareImage(primary, userLevels, dimOrder, dimDefs,
   }
 
   y += 16
+
+  // 最佳搭子信息
+  if (matcherData && matcherData.bestMatch) {
+    const { bestMatch, myCode } = matcherData
+
+    // 分隔线
+    y += 20
+    ctx.beginPath()
+    ctx.moveTo(cardX + 48, y)
+    ctx.lineTo(cardX + cardW - 48, y)
+    ctx.strokeStyle = '#e8f0ea'
+    ctx.lineWidth = 2
+    ctx.stroke()
+    y += 30
+
+    // 搭子标题
+    ctx.textAlign = 'center'
+    ctx.font = '600 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#e85d75'
+    ctx.fillText('💕 我的最佳搭子', W / 2, y)
+    y += 36
+
+    // 关系类型标签
+    roundRect(ctx, (W - 140) / 2, y - 14, 140, 32, 16)
+    ctx.fillStyle = '#ffd1dc'
+    ctx.fill()
+    ctx.font = '600 14px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#c44569'
+    ctx.fillText(`${bestMatch.relationEmoji} ${bestMatch.relationLabel}`, W / 2, y + 4)
+    y += 40
+
+    // 搭子类型代码
+    ctx.font = '900 48px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#c44569'
+    ctx.fillText(bestMatch.code, W / 2, y)
+    y += 32
+
+    // 搭子类型名称
+    ctx.font = '600 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#8b4557'
+    ctx.fillText(bestMatch.cn, W / 2, y)
+    y += 28
+
+    // 匹配度
+    ctx.font = '900 36px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#e85d75'
+    ctx.fillText(`${bestMatch.score}%`, W / 2, y)
+    y += 20
+    ctx.font = '400 14px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#b76b7a'
+    ctx.fillText('匹配度', W / 2, y)
+    y += 28
+
+    // 关系描述
+    ctx.font = '400 16px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillStyle = '#8b4557'
+    const descLines = wrapText(ctx, bestMatch.relationDesc, cardW - 120)
+    for (const line of descLines.slice(0, 2)) {
+      ctx.fillText(line, W / 2, y)
+      y += 22
+    }
+    y += 10
+  }
 
   // 底部水印
   ctx.textAlign = 'center'
