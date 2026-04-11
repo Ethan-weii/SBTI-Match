@@ -71,6 +71,36 @@ body {
   padding: 48px 24px;
 }
 
+.intro-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.brand-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
+.brand-divider {
+  display: none;
+}
+
+.brand-slogan {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #e85d75;
+  letter-spacing: 0.05em;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #fef5f7 0%, #fff0f3 100%);
+  border: 1.5px solid #ffd1dc;
+  border-radius: 20px;
+}
+
 .intro-title {
   font-size: 2rem;
   font-weight: 800;
@@ -717,4 +747,151 @@ body {
 
 .ranking-item.is-self .ranking-score {
   color: var(--accent);
+}
+
+/* ========== Dimension Toggle Button ========== */
+.btn-toggle {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 16px 0;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle:hover {
+  background: var(--border);
+  border-color: var(--accent);
+}
+
+.dimensions-detail {
+  text-align: left;
+  margin-bottom: 24px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+/* ========== Flat Rankings Display ========== */
+.rankings-flat {
+  text-align: left;
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 8px;
+}
+
+.ranking-group-flat {
+  margin-bottom: 20px;
+}
+
+.ranking-group-flat:last-child {
+  margin-bottom: 0;
+}
+
+.ranking-group-header-flat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ranking-emoji {
+  font-size: 1.2rem;
+}
+
+.ranking-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+}
+
+.ranking-group-header-flat .ranking-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.ranking-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ranking-type-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.ranking-type-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.ranking-type-tag.is-self {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.ranking-type-tag .type-code {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 50px;
+}
+
+.ranking-type-tag .type-name {
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+.ranking-type-tag .type-score {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #e85d75;
+  background: rgba(232, 93, 117, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ranking-type-tag.is-self .type-score {
+  color: var(--accent);
+  background: rgba(76, 103, 82, 0.1);
+}
+
+/* Section title adjustments */
+.matcher-title {
+  color: #c44569;
+  margin-top: 8px;
+}
+
+.rankings-title {
+  margin-top: 28px;
+  margin-bottom: 12px;
 }
